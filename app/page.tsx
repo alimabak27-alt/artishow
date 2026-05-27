@@ -1,65 +1,45 @@
-import Image from "next/image";
+// frame 1 -> accueil/ID, page sur laqulle on atterit
 
-export default function Home() {
+'use client'; // Obligatoire car je gère un clic utilisateur 
+
+import { useRouter } from 'next/navigation';
+
+export default function homePage() {
+  const router=useRouter()
+  const gererValidation=async (event: React.FormEvent<HTMLFormElement>)=>{ //fct qui s'active quand le bouton validé est cliqué
+    event.preventDefault(); //empeche la page de se rafraichir tt le temps
+    const formData = new FormData(event.currentTarget); //recupérationd des données du form
+    const idSaisi = formData.get('Id');
+    const collabIdSaisi = formData.get('collaborateurId');
+    const reponse = await fetch(`/api/id?Id=${idSaisi}&collaborateurId=${collabIdSaisi}`); //envoie des données à l'API supabase
+    if (reponse.ok){
+      router.push(`/text?Id=${idSaisi}`); //si le serveur répond ok on passe à la page suivazntr + on garde l'id dans l'url comme ça la page d'après saura à qui est ce texte
+
+    } else{
+      alert("mise en lien avec le collaborateur impossible")
+    }
+  };
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main>
+      <div className="texte-center bg-pink-50 min-h-screen"> 
+      <h1 className="text-center font-bold">Bonjour et bienvenue sur GGcoder</h1>
+      <form onSubmit={gererValidation} className="text-center bg-pink-50 p-8 rounded-3xl shadow-sm">
+        
+        <input 
+          name="Id" 
+          placeholder="Votre ID"
+          className="border p-2 rounded-full"
+          required />
+         <input 
+          name="collaborateurId" 
+          placeholder="L'ID de votre collaborateur"
+          className="border p-2 rounded-full"
+          required />
+        <button type="submit" className="bg-blue-500 text-white p-2 rounded-full"> Valider</button>
+      </form>
+    
+      </div>
+    </main>
+    
   );
 }
