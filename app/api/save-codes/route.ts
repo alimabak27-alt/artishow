@@ -5,32 +5,45 @@ export async function POST(request: NextRequest) {
   try {
     const { idUtilisateur, indexParagraphe, codes } = await request.json();
 
-    // On récupère d'abord ce qui existe déjà dans la base
+    // 1. On utilise maybeSingle() au lieu de single() pour ne pas faire planter l'API si la ligne n'existe pas
     const { data: ligneActuelle } = await supabase
       .from('textes_collaborateurs')
       .select('resultats_codage')
       .eq('id_utilisateur', idUtilisateur)
-      .single();
+      .maybeSingle();
 
-    // je prépare le nouvel objet JSON
-    // Si la colonne est vide, je crée un objet vide {}, sinon je garde l'existant
+    // 2. Je prépare le nouvel objet JSON
     let codageMisAJour = ligneActuelle?.resultats_codage || {};
 
-    // On ajoute (ou on remplace) les codes pour l'index du paragraphe actuel
-    // Exemple : { "0": ["codeA", "codeB"], "1": ["codeC"] }
+    // On ajoute les codes pour l'index du paragraphe actuel (en enlevant les cases vides)
     codageMisAJour[indexParagraphe] = codes.filter((c: string) => c && c.trim() !== "");
 
-    // enregistrement de tt ça dans supabase
-    const { error } = await supabase
-      .from('textes_collaborateurs')
-      .update({ resultats_codage: codageMisAJour })
-      .eq('id_utilisateur', idUtilisateur);
+    // 3. LA MAGIE : On met à jour OU on crée la ligne selon la situation
+    if (ligneActuelle) {
+        // Cas A : La ligne existe (c'est le créateur du texte, par exemple)
+        const { error } = await supabase
+          .from('textes_collaborateurs')
+          .update({ resultats_codage: codageMisAJour })
+          .eq('id_utilisateur', idUtilisateur);
+          
+        if (error) throw error;
+    } else {
+        // Cas B : La ligne n'existe pas encore (c'est l'invité !), on la crée
+        const { error } = await supabase
+          .from('textes_collaborateurs')
+          .insert([
+            {
+                id_utilisateur: idUtilisateur,
+                resultats_codage: codageMisAJour
+            }
+          ]);
+          
+        if (error) throw error;
+    }
 
-    if (error) throw error;
-
-    return NextResponse.json({ message: "Codes sauvegardés !" });
+    return NextResponse.json({ message: "Codes sauvegardés avec succès !" });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ erreur: "Erreur serveur" }, { status: 500 });
+    console.error("Erreur API save-codes:", error);
+    return NextResponse.json({ erreur: "Erreur serveur lors de la sauvegarde" }, { status: 500 });
   }
 }
